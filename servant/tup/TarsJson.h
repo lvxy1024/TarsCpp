@@ -20,7 +20,7 @@ class JsonInput
 public:
 
 	template<typename T>
-	static void readJson(T& c, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
+	static void readJson(T& c, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
 	{
 		if(p && p->getType() == eJsonTypeBoolean)
 		{
@@ -35,7 +35,7 @@ public:
 	}
 
 	template<typename T>
-	static void readJson(T& c, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value, void ***>::type dummy = 0)
+	static void readJson(T& c, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value, void ***>::type dummy = 0)
     {
 		if(p && p->getType() == eJsonTypeNum) {
     		c = (T)dynamic_cast<JsonValueNum*>(p.get())->lvalue;
@@ -49,7 +49,7 @@ public:
     }
 
     template<typename T>
-    static void readJson(T& n, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_floating_point<T>::value, void ***>::type dummy = 0)
+    static void readJson(T& n, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_floating_point<T>::value, void ***>::type dummy = 0)
     {
     	if(p && p->getType() == eJsonTypeNum)
     	{
@@ -68,7 +68,7 @@ public:
     }
 
     template<typename T>
-    static void readJson(T& c, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_enum<T>::value, void ***>::type dummy = 0)
+    static void readJson(T& c, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_enum<T>::value, void ***>::type dummy = 0)
     {
     	if(p && p->getType() == eJsonTypeNum)
     	{
@@ -83,7 +83,7 @@ public:
     }
 
 	template<typename T>
-	static void readJson(T& s, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_same<T, string>::value, void ***>::type dummy = 0)
+	static void readJson(T& s, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_same<T, string>::value, void ***>::type dummy = 0)
     {
         if(p && p->getType() == eJsonTypeString)
         {
@@ -158,7 +158,7 @@ public:
 
     /// 读取结构
     template<typename T>
-    static void readJson(T& v, const JsonValuePtr &p, bool isRequire = true, typename std::enable_if<std::is_convertible<T*, TarsStructBase*>::value, void ***>::type dummy = 0)
+    static void readJson(T& v, const JsonValuePtr &p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_convertible<T*, TarsStructBase*>::value, void ***>::type dummy = 0)
     {
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -267,7 +267,7 @@ public:
     }
 
 	template<typename K, typename V, typename H, typename Cmp>
-	static void readJson(std::map<K, V, H, Cmp>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
+	static void readJson(std::map<K, V, H, Cmp>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
 	{
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -290,7 +290,7 @@ public:
 	}
 
 	template<typename K, typename V, typename H, typename Cmp>
-	static void readJson(std::map<K, V, H, Cmp>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
+	static void readJson(std::map<K, V, H, Cmp>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
 	{
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -313,7 +313,7 @@ public:
 	}
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static void readJson(std::map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
+	static void readJson(std::map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
 	{
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -336,7 +336,7 @@ public:
 	}
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static void readJson(std::map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
+	static void readJson(std::map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
 	{
 		if(p && p->getType() == eJsonTypeObj)
 		{
@@ -362,7 +362,7 @@ public:
 	}
 
 	template<typename K, typename V, typename H, typename Cmp, typename Alloc>
-	static void readJson(std::unordered_map<K, V, H, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
+	static void readJson(std::unordered_map<K, V, H, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
 	{
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -385,7 +385,7 @@ public:
 	}
 
 	template<typename K, typename V, typename H, typename Cmp, typename Alloc>
-	static void readJson(std::unordered_map<K, V, H, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
+	static void readJson(std::unordered_map<K, V, H, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
 	{
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -409,7 +409,7 @@ public:
 
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static void readJson(std::unordered_map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
+	static void readJson(std::unordered_map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
 	{
     	if(p && p->getType() == eJsonTypeObj)
     	{
@@ -433,7 +433,7 @@ public:
 
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static void readJson(std::unordered_map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
+	static void readJson(std::unordered_map<K, V, Cmp, Alloc>& m, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
 	{
 		if(p && p->getType() == eJsonTypeObj)
 		{
@@ -481,7 +481,7 @@ public:
     }
 
     template<typename T, typename Alloc>
-    static void readJson(std::vector<T, Alloc>& v, const JsonValuePtr & p, bool isRequire = true, typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
+    static void readJson(std::vector<T, Alloc>& v, const JsonValuePtr & p, bool isRequire = true, [[maybe_unused]] typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
     {
     	if(p && p->getType() == eJsonTypeArray)
     	{
@@ -556,31 +556,31 @@ class JsonOutput
 public:
 
 	template<class T>
-	static JsonValueBooleanPtr writeJson(T b, typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
+	static JsonValueBooleanPtr writeJson(T b, [[maybe_unused]] typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
     {
 		return new JsonValueBoolean(b);
     }
 
     template<class T>
-    static JsonValueNumPtr writeJson(T b, typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value, void ***>::type dummy = 0)
+    static JsonValueNumPtr writeJson(T b, [[maybe_unused]] typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value, void ***>::type dummy = 0)
     {
     	return (new JsonValueNum((int64_t)b,true));
 	}
 
 	template<class T>
-	static JsonValueNumPtr writeJson(T b, typename std::enable_if<std::is_floating_point<T>::value, void ***>::type dummy = 0)
+	static JsonValueNumPtr writeJson(T b, [[maybe_unused]] typename std::enable_if<std::is_floating_point<T>::value, void ***>::type dummy = 0)
 	{
 		return (new JsonValueNum(b, false));
 	}
 
 	template<class T>
-	static JsonValueStringPtr writeJson(const T &b, typename std::enable_if<std::is_same<T, string>::value, void ***>::type dummy = 0)
+	static JsonValueStringPtr writeJson(const T &b, [[maybe_unused]] typename std::enable_if<std::is_same<T, string>::value, void ***>::type dummy = 0)
 	{
 		return (new JsonValueString(b));
 	}
 
 	template<typename T>
-	static JsonValueNumPtr writeJson(const T& v, typename std::enable_if<std::is_enum<T>::value, void ***>::type dummy = 0)
+	static JsonValueNumPtr writeJson(const T& v, [[maybe_unused]] typename std::enable_if<std::is_enum<T>::value, void ***>::type dummy = 0)
 	{
 		return writeJson((Int32) v);
 	}
@@ -613,7 +613,7 @@ public:
 	}
 
     template<typename K, typename V, typename Cmp, typename Alloc>
-    static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
+    static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
     {
     	JsonValueObjPtr pObj=new JsonValueObj();
     	for (auto i = m.begin(); i != m.end(); ++i)
@@ -624,7 +624,7 @@ public:
     }
 
 	template<typename K, typename V, typename H, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_integral<K>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -635,7 +635,7 @@ public:
 	}
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -646,7 +646,7 @@ public:
 	}
 
 	template<typename K, typename V, typename H, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_floating_point<K>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -657,7 +657,7 @@ public:
 	}
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -668,7 +668,7 @@ public:
 	}
 
 	template<typename K, typename V, typename H, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_enum<K>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -679,7 +679,7 @@ public:
 	}
 
 	template<typename K, typename V, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::map<K, V, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -690,7 +690,7 @@ public:
 	}
 
 	template<typename K, typename V, typename H, typename Cmp, typename Alloc>
-	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
+	static JsonValueObjPtr writeJson(const std::unordered_map<K, V, H, Cmp, Alloc>& m, [[maybe_unused]] typename std::enable_if<std::is_convertible<K*, TarsStructBase*>::value, void ***>::type dummy = 0)
 	{
 		JsonValueObjPtr pObj=new JsonValueObj();
 		for (auto i = m.begin(); i != m.end(); ++i)
@@ -713,7 +713,7 @@ public:
     }
 
     template<typename T, typename Alloc>
-    static JsonValueArrayPtr writeJson(const std::vector<T, Alloc>& v, typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
+    static JsonValueArrayPtr writeJson(const std::vector<T, Alloc>& v, [[maybe_unused]] typename std::enable_if<std::is_same<T, bool>::value, void ***>::type dummy = 0)
     {
     	JsonValueArrayPtr pArray=new JsonValueArray();
     	pArray->value.resize(v.size());
@@ -769,7 +769,7 @@ public:
     }
 
     template<typename T>
-    static JsonValueObjPtr writeJson(const T& v, typename std::enable_if<std::is_convertible<T*, TarsStructBase*>::value, void ***>::type dummy = 0)
+    static JsonValueObjPtr writeJson(const T& v, [[maybe_unused]] typename std::enable_if<std::is_convertible<T*, TarsStructBase*>::value, void ***>::type dummy = 0)
     {
         return JsonValueObjPtr::dynamicCast(v.writeToJson());
     }
