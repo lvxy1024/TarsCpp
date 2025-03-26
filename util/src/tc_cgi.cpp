@@ -3,14 +3,14 @@
  *
  * Copyright (C) 2016THL A29 Limited, a Tencent company. All rights reserved.
  *
- * Licensed under the BSD 3-Clause License (the "License"); you may not use this file except 
+ * Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
  * https://opensource.org/licenses/BSD-3-Clause
  *
- * Unless required by applicable law or agreed to in writing, software distributed 
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
 #include "util/tc_platform.h"
@@ -94,7 +94,7 @@ void TC_Cgi::parseCgi()
 {
 #if TARGET_PLATFORM_LINUX || TARGET_PLATFORM_IOS
     char **env = environ;
-  
+
     while(*env != NULL)
     {
         string s(*env);
@@ -106,16 +106,16 @@ void TC_Cgi::parseCgi()
         ++env;
     }
 #else
-    LPCSTR env; 
-    LPVOID lpvEnv; 
-     
-    // Get a pointer to the environment block. 
-    lpvEnv = GetEnvironmentStrings(); 
-     
-    // Variable strings are separated by NULL byte, and the block is 
-    // terminated by a NULL byte. 
-    for (env = (LPCSTR) lpvEnv; *env; env++) 
-    { 
+    LPCSTR env;
+    LPVOID lpvEnv;
+
+    // Get a pointer to the environment block.
+    lpvEnv = GetEnvironmentStrings();
+
+    // Variable strings are separated by NULL byte, and the block is
+    // terminated by a NULL byte.
+    for (env = (LPCSTR) lpvEnv; *env; env++)
+    {
         string s(env);
         string::size_type pos = s.find('=');
         if(pos != string::npos)
@@ -123,8 +123,8 @@ void TC_Cgi::parseCgi()
             _env[s.substr(0, pos)] = s.substr(pos + 1);
         }
         // ++env;
-    } 
-#endif  
+    }
+#endif
     _is = &cin;
 
     readCgiInput(_mmpParams, _mpCookies);
@@ -807,7 +807,7 @@ string TC_Cgi::htmlHeader(const string &sHeader)
 string TC_Cgi::decodeURL(const string &sUrl)
 {
     string sDecodeUrl;
-    register string::size_type pos = 0;
+    string::size_type pos = 0;
     string::size_type len = sUrl.length();
 
     sDecodeUrl = "";
@@ -892,4 +892,3 @@ string TC_Cgi::encodeXML(const string &src)
 }
 
 }
-
