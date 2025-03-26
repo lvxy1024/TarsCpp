@@ -19,7 +19,7 @@
 #include "util/tc_common.h"
 #include "util/tc_des.h"
 #include "util/tc_base64.h"
-#include "errmsg.h"
+#include <mysql/errmsg.h>
 #include <sstream>
 #include <string.h>
 

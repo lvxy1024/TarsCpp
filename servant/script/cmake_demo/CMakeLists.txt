@@ -18,9 +18,6 @@ IF (TARS_WEB_HOST STREQUAL "")
 	set(TARS_WEB_HOST "http://tars.test.com")
 ENDIF ()
 
-include_directories(/usr/local/tars/cpp/thirdparty/include)
-# link_directories(/usr/local/tars/cpp/thirdparty/lib)
-
 #include_directories(/home/tarsprotol/App/OtherServer)
 
 add_subdirectory(src)

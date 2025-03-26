@@ -17,7 +17,7 @@
 #pragma once
 
 #include "util/tc_platform.h"
-#include "mysql.h"
+#include <mysql/mysql.h>
 #include "util/tc_ex.h"
 #include <map>
 #include <vector>
