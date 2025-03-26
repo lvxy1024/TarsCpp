@@ -7,12 +7,12 @@ TARS_PATH    :=/usr/local/tars/cpp
 
 CC          = gcc
 CXX         = g++
-CFLAGS      += -std=c++11 -g -O2 -Wno-deprecated -Wall -fsigned-char
+CFLAGS      += -std=c++20 -g -O2 -Wno-deprecated -Wall -fsigned-char
 
 #-------------------------------------------------------------------------------
 
 TARS2CPP     := ${TARS_PATH}/tools/tars2cpp ${TARS2CPP_FLAG}
-PROTO2TARS := ${TARS_PATH}/tools/pb2tarscpp 
+PROTO2TARS := ${TARS_PATH}/tools/pb2tarscpp
 
 #-------------------------------------------------------------------------------
 
@@ -45,12 +45,11 @@ INC_DIR         += ${MYSQL_INC}
 #ifneq ($(TARS_OPENTRACKING), 0)
 #ifneq ($(TARS_OPENTRACKING), )
 #	OPENTRACKING_INC     += -I/usr/local/include
-#	OPENTRACKING_LIB_DIR += -L/usr/local/lib 
+#	OPENTRACKING_LIB_DIR += -L/usr/local/lib
 #	LIB_DIR += ${OPENTRACKING_LIB_DIR}
 #	INC_DIR += ${OPENTRACKING_INC}
 #endif
 #endif
-
 
 
 INCLUDE         += -I${TARS_PATH}/include -I./ ${INC_DIR}
@@ -76,7 +75,7 @@ endif
 #ifneq ($(TARS_OPENTRACKING), )
 	#业务编译
 #	CFLAGS += -D_USE_OPENTRACKING=1
-#	LIB += -lopentracing -lzipkin_opentracing -lzipkin -lcurl 
+#	LIB += -lopentracing -lzipkin_opentracing -lzipkin -lcurl
 #endif
 #endif
 
@@ -109,7 +108,7 @@ $(filter %.so,$(TARGET)) : $(LOCAL_OBJ) $(REMOTE_OBJ)
 
 $(filter-out %.so %.a,$(TARGET)) : $(LOCAL_OBJ) $(REMOTE_OBJ)
 	$(CXX) $(CFLAGS) -o $@ $^ $(INCLUDE) $(LIB)
-    
+
 FORSTRIP:$(TARGET)
 ifeq ($(STRIP_FLAG),Y)
 	@strip $(TARGET)
@@ -176,7 +175,7 @@ tar: $(TARGET) $(CONFIG)
 		rm -rf $(TARGET)_tmp_dir; \
 		echo "tar cvfz $(TARGET).tgz ..."; \
 	fi
-	
+
 HELP += $(HELP_TAR)
 
 ifneq ($(TARS_SRC),)
