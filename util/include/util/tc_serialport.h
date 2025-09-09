@@ -271,6 +271,11 @@ public:
 	}
 #endif
 
+	/**
+	 * 关闭串口句柄
+	 */
+	void close();
+
 protected:
 
     friend class TC_SerialPortGroup;
@@ -356,11 +361,6 @@ protected:
 	 *
 	 */
 	void onRequestCallback();
-
-	/**
-	 * 关闭串口句柄
-	 */
-	void close();
 
 #if TARGET_PLATFORM_WINDOWS
 	OVERLAPPED *getOsRead() { return &_osRead; }
@@ -492,6 +492,12 @@ public:
      * @param sp
      */
     void erase(const std::shared_ptr<TC_SerialPort> & sp);
+
+	/**
+	 * 删除串口
+	 * @param portName
+	 */
+	void erase(const string &portName);
 
 	/**
 	 * 获取系统中的串口名称
