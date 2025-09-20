@@ -106,7 +106,7 @@ class TC_SerialPortGroup;
 /**
 * 异步串口通信类
 */
-class UTIL_DLL_API TC_SerialPort
+class UTIL_DLL_API TC_SerialPort : public std::enable_shared_from_this<TC_SerialPort>
 {
 public:
    /**
@@ -144,7 +144,7 @@ public:
         virtual void onClose() = 0;
 
 		/**
-		 * @brief 心跳回调, 在串口通信线程中调用, 每当有收发数据时, 都会回调, 最长不超过
+		 * @brief 心跳回调, 在串口通信线程中调用, 每当有收发数据时, 都会回调, 最长不超过_heartbeatMaxInterval时间没有收发数据, 会回调onHeartbeat
 		 */
 		virtual void onHeartbeat() {};
     };
@@ -270,11 +270,17 @@ public:
 		return _serialFd;
 	}
 #endif
-
 	/**
 	 * 关闭串口句柄
+	 * 建议调用group的erase接口来删除串口, 不要直接调用close
 	 */
 	void close();
+
+	/**
+	 * 打开串口
+	 * 如果关闭, 会自动重新打开
+	 */
+	void open();
 
 protected:
 
@@ -284,6 +290,7 @@ protected:
 	 * 初始化串口
 	 */
 	void initialize();
+
 
 	/**
 	 * sendRequest返回值
@@ -387,9 +394,14 @@ protected:
 	Options _options;
 
 	/**
+	 * 消息互斥量
+	 */
+	std::mutex _messageMutex;
+
+	/**
 	 * 互斥量
 	 */
-	std::mutex _mutex;
+	std::recursive_mutex _mutex;
 
 	/**
 	 * 等待互斥量
@@ -494,12 +506,6 @@ public:
     void erase(const std::shared_ptr<TC_SerialPort> & sp);
 
 	/**
-	 * 删除串口
-	 * @param portName
-	 */
-	void erase(const string &portName);
-
-	/**
 	 * 获取系统中的串口名称
 	 * @param prefix, 名称前缀(对windows无效), linux/mac下有效
 	 */
@@ -531,7 +537,24 @@ public:
 protected:
     void run();
 
+	TC_ThreadPool *getThreadPool()
+	{
+		return &_tpool;
+	}
 
+	/**
+	 * 删除某个串口
+	 * @param portName
+	 */
+	void erase(const string &portName);
+
+	/**
+	 * 重新打开某个串口
+	 * @param portName	
+	 */
+	void add(const std::shared_ptr<TC_SerialPort> & sp);
+
+	friend class TC_SerialPort;
 protected:
 
 	/**
@@ -550,12 +573,18 @@ protected:
 	 * 完成端口
 	 */
 	HANDLE _ioPort = INVALID_HANDLE_VALUE;
+
 #endif
     std::recursive_mutex _mutex;
 
     std::map<std::string, std::shared_ptr<TC_SerialPort>> _serialPorts;
 
     std::thread *_th = NULL;
+
+	/**
+	 * 回调线程
+	 */
+	TC_ThreadPool _tpool;	
 };
 
 }

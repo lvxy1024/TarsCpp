@@ -31,6 +31,7 @@ TC_SerialPortGroup::~TC_SerialPortGroup()
 		_ioPort = INVALID_HANDLE_VALUE;
 	}
 #endif
+	_tpool.stop();
 }
 void TC_SerialPortGroup::initialize()
 {
@@ -38,13 +39,16 @@ void TC_SerialPortGroup::initialize()
 	{
 		throw TC_SerialPortException("serial port group has initialize.");
 	}
-
+	_tpool.init(1);
+	_tpool.start();
 #if !TARGET_PLATFORM_WINDOWS
 	_epoller.create(1024);
 #else
 	_ioPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 #endif
 	_th = new std::thread(std::bind(&TC_SerialPortGroup::run, this));
+
+
 }
 
 shared_ptr<TC_SerialPort> TC_SerialPortGroup::create(const TC_SerialPort::Options & options, const TC_SerialPort::onparser_callback & onparser, const TC_SerialPort::RequestCallbackPtr & callbackPtr)
@@ -57,26 +61,32 @@ shared_ptr<TC_SerialPort> TC_SerialPortGroup::create(const TC_SerialPort::Option
 
 	shared_ptr<TC_SerialPort> sp = std::make_shared<TC_SerialPort>(options, this, onparser, callbackPtr);
 	
-	sp->initialize();
-
-    _serialPorts[options.portName] = sp;
+	sp->open();
 
 	return sp;
+}
+
+void TC_SerialPortGroup::add(const std::shared_ptr<TC_SerialPort> & sp)
+{
+	if(sp)
+	{
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		_serialPorts[sp->options().portName] = sp;
+	}
 }
 
 void TC_SerialPortGroup::erase(const string &portName)
 {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	_serialPorts.erase(portName);	
+	_serialPorts.erase(portName);
 }
 
 void TC_SerialPortGroup::erase(const shared_ptr<TC_SerialPort> & sp)
 {
 	if(sp)
 	{
-		// sp->close();
-
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		sp->close();
 		_serialPorts.erase(sp->options().portName);
 	}
 }
@@ -157,11 +167,28 @@ void TC_SerialPortGroup::run()
 
 								if(callback)
 								{
-									try { callback->onHeartbeat(); } catch(const std::exception& ex) { }
+									try { _tpool.exec([callback]{callback->onHeartbeat(); }); } catch(const std::exception& ex) { }
 								}
 							}
 
-							e.second->doRequest();
+							try
+							{
+								std::lock_guard<std::recursive_mutex> lock(e.second->_mutex);
+								if(e.second->isValid())
+								{
+									e.second->doRequest();
+								}
+							}
+							catch(const std::exception& ex)
+							{
+								string err = string("serial port: `") + e.second->options().portName + "` exception:" + ex.what();
+								e.second->close();
+								auto callback = e.second->getRequestCallbackPtr();
+								if(callback)
+								{
+									_tpool.exec([callback, err]{callback->onFailed(err); });
+								}
+							}
 						}
 	              	});
 
@@ -199,8 +226,14 @@ void TC_SerialPortGroup::run()
 
 				if(callback)
 				{
-					try { callback->onHeartbeat(); } catch(const std::exception& ex) { }
+					try { _tpool.exec([callback]{callback->onHeartbeat(); }); } catch(const std::exception& ex) { }
 				}
+			}
+
+			std::lock_guard<std::recursive_mutex> lock(e.second->_mutex);
+			if(!e.second->isValid())
+			{
+				continue;
 			}
 
 			try
@@ -228,8 +261,14 @@ void TC_SerialPortGroup::run()
 			}
 			catch(const std::exception& ex)
 			{
-				e.second->getRequestCallbackPtr()->onFailed(ex.what());
+				string err = string("serial port: `") + e.second->options().portName + "` exception:" + ex.what();
 				e.second->close();
+				auto callback = e.second->getRequestCallbackPtr();
+				if(callback)
+				{
+					_tpool.exec([callback, err]{callback->onFailed(err); });
+				}
+
 			}
 		}
 	}
@@ -257,7 +296,7 @@ void TC_SerialPortGroup::terminate()
 	}
 	delete _th;
 	_th = NULL;
-
+	_tpool.stop();
 }
 
 //////////////////////////////////////////////////////////////
@@ -273,55 +312,80 @@ TC_SerialPort::~TC_SerialPort()
 
 void TC_SerialPort::close()
 {
-	if(!isValid())
+	_serialPortGroup->erase(options().portName);
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		if(!isValid())
+		{
+			return;
+		}
+		_sendBuffer.clearBuffers();
+		_recvBuffer.clearBuffers();
+
+	#if TARGET_PLATFORM_WINDOWS
+
+		_buffRecv.clear();
+		if( _osRead.hEvent != NULL ) 
+		{
+			CloseHandle( _osRead.hEvent);
+			_osRead.hEvent = NULL;
+			
+		}
+
+		if( _osWrite.hEvent != NULL ) 
+		{
+			CloseHandle( _osWrite.hEvent );	
+			_osWrite.hEvent = NULL;
+		}
+
+		if(_osNotifyWrite.hEvent != NULL)
+		{
+			CloseHandle(_osNotifyWrite.hEvent);
+			_osNotifyWrite.hEvent = NULL;
+		}
+
+		if(_serialFd != INVALID_HANDLE_VALUE)
+		{
+			CreateIoCompletionPort(_serialFd, NULL, 0, 0);
+
+			CloseHandle(_serialFd); 
+			_serialFd = INVALID_HANDLE_VALUE;
+		}
+	#else
+		if (_serialFd >= 0)
+		{
+			::close(_serialFd);
+			_serialFd = -1;
+		}
+	#endif
+	}
+
+
+	auto callbackPtr = getRequestCallbackPtr();
+	if(callbackPtr)
+	{
+		_serialPortGroup->getThreadPool()->exec([callbackPtr]{callbackPtr->onClose(); });	
+	}
+}
+
+void TC_SerialPort::open()
+{
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if(isValid())
 	{
 		return;
 	}
-	_sendBuffer.clearBuffers();
-	_recvBuffer.clearBuffers();
 
-#if TARGET_PLATFORM_WINDOWS
-
-	_buffRecv.clear();
-	if( _osRead.hEvent != NULL ) 
-	{
-		CloseHandle( _osRead.hEvent);
-		_osRead.hEvent = NULL;
-		
-	}
-
-	if( _osWrite.hEvent != NULL ) 
-	{
-		CloseHandle( _osWrite.hEvent );	
-		_osWrite.hEvent = NULL;
-	}
-
-	if(_osNotifyWrite.hEvent != NULL)
-	{
-		CloseHandle(_osNotifyWrite.hEvent);
-		_osNotifyWrite.hEvent = NULL;
-	}
-
-	if(_serialFd != INVALID_HANDLE_VALUE)
-	{
-
-		CloseHandle(_serialFd); 
-		_serialFd = INVALID_HANDLE_VALUE;
-	}
-#else
-	if (_serialFd >= 0)
-	{
-		::close(_serialFd);
-		_serialFd = -1;
-	}
-#endif
-
-	_callbackPtr->onClose();	
+	initialize();
 }
 
 void TC_SerialPort::initialize()
 {
 #if TARGET_PLATFORM_WINDOWS
+
 	if (_serialFd != INVALID_HANDLE_VALUE)
     {
         throw TC_SerialPortException("open serial port: " + _options.portName + " has initialized.");
@@ -396,7 +460,7 @@ void TC_SerialPort::initialize()
         throw TC_SerialPortException("open serial port: " + _options.portName + " has initialized.");
     }
 
-	_serialFd = open(_options.portName.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+	_serialFd = ::open(_options.portName.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (_serialFd == -1)
 	{
 		throw TC_SerialPortException("Failed to open serial port: " + _options.portName);
@@ -499,29 +563,31 @@ void TC_SerialPort::initialize()
 	_buffRecv.clear();
 #endif
 	
+	_serialPortGroup->add(shared_from_this());
+
 	auto callback = getRequestCallbackPtr();
 	if(callback)	
 	{
-		callback->onOpen();
+		_serialPortGroup->getThreadPool()->exec([callback]{callback->onOpen(); });
 	}
 
 }
 
 void TC_SerialPort::setParserCallback(const onparser_callback & onparser)
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::lock_guard<std::mutex> lock(_messageMutex);
 	_onParserCallback = onparser;
 }
 
 void TC_SerialPort::setRequestCallback(const RequestCallbackPtr & callbackPtr)
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::lock_guard<std::mutex> lock(_messageMutex);
 	_callbackPtr = callbackPtr;
 }
 
 TC_SerialPort::RequestCallbackPtr TC_SerialPort::getRequestCallbackPtr()
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::lock_guard<std::mutex> lock(_messageMutex);
 	return _callbackPtr;
 }
 
@@ -530,15 +596,11 @@ void TC_SerialPort::sendRequest(const char* sBuffer, size_t length, bool header)
 	if (sBuffer == nullptr || length == 0)
 		return;
 
-	shared_ptr<TC_NetWorkBuffer::Buffer> buff = std::make_shared<TC_NetWorkBuffer::Buffer>();
 
+	shared_ptr<TC_NetWorkBuffer::Buffer> buff = std::make_shared<TC_NetWorkBuffer::Buffer>();
 	buff->addBuffer(sBuffer, length);
 
-	if(!isValid())
-	{
-		initialize();
-	}
-	addSendReqBuffer(buff, header);
+	sendRequest(buff, header);
 }
 
 void TC_SerialPort::sendRequest(const shared_ptr<TC_NetWorkBuffer::Buffer> & buff, bool header)
@@ -546,10 +608,21 @@ void TC_SerialPort::sendRequest(const shared_ptr<TC_NetWorkBuffer::Buffer> & buf
 	if (buff && buff->empty())
 		return;
 
-	if(!isValid())
+	//重新打开
+	try
 	{
-		initialize();
+		open();
 	}
+	catch(const std::exception& ex)
+	{
+		string err = string("serial port: `") + options().portName + "` exception:" + ex.what();
+		auto callback = getRequestCallbackPtr();
+		if(callback)
+		{
+			_serialPortGroup->getThreadPool()->exec([callback, err]{callback->onFailed(err); });
+		}
+	}
+
 	addSendReqBuffer(buff, header);
 }
 
@@ -595,7 +668,7 @@ void TC_SerialPort::notify(vector<char> && response)
 
 void TC_SerialPort::addSendReqBuffer(const shared_ptr<TC_NetWorkBuffer::Buffer> & reqBuffer, bool header)
 {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::lock_guard<std::mutex> lock(_messageMutex);
 
 	if (header)
 	{
@@ -612,7 +685,6 @@ void TC_SerialPort::addSendReqBuffer(const shared_ptr<TC_NetWorkBuffer::Buffer> 
 #else
 	_serialPortGroup->getEpoller().notify();
 #endif
-
 }
 
 int TC_SerialPort::doProtocolAnalysis(TC_NetWorkBuffer *buff)
@@ -631,7 +703,7 @@ int TC_SerialPort::doProtocolAnalysis(TC_NetWorkBuffer *buff)
 			ioriginal = buff->getBufferLength();
 
 			{
-				std::lock_guard<std::mutex> lock(_mutex);
+				std::lock_guard<std::mutex> lock(_messageMutex);
 				ret = _onParserCallback(*buff, out);
 			}
 			isurplus = buff->getBufferLength();
@@ -644,7 +716,7 @@ int TC_SerialPort::doProtocolAnalysis(TC_NetWorkBuffer *buff)
 
 				if (callback)
 				{
-					try { callback->onSucc(std::move(out)); } catch (...) { }
+					try { _serialPortGroup->getThreadPool()->exec([callback, out]() mutable {callback->onSucc(std::move(out)); }); } catch (...) { }
 				}
 
 			}
@@ -691,53 +763,39 @@ bool TC_SerialPort::handleCloseImp()
 
 bool TC_SerialPort::handleInputImp(const shared_ptr<TC_Epoller::EpollInfo> & epollInfo)
 {
-	try
+	//串口读取数据
+	int iRet = 0;
+
+	do
 	{
-		//串口读取数据
-		int iRet = 0;
+		size_t expansion = (std::max)((std::min)(_recvBuffer.getBufferLength(), (size_t) MAX_BUFFER_SIZE), (size_t) BUFFER_SIZE);
+		auto data = _recvBuffer.getOrCreateBuffer(BUFFER_SIZE / 2, expansion);
 
-		do
+		uint32_t left = (uint32_t) data->left();
+
+		if ((iRet = this->recv((void *) data->free(), left)) > 0)
 		{
-			size_t expansion = (std::max)((std::min)(_recvBuffer.getBufferLength(), (size_t) MAX_BUFFER_SIZE), (size_t) BUFFER_SIZE);
-			auto data = _recvBuffer.getOrCreateBuffer(BUFFER_SIZE / 2, expansion);
+			data->addWriteIdx(iRet);
 
-			uint32_t left = (uint32_t) data->left();
+			_recvBuffer.addLength(iRet);
 
-			if ((iRet = this->recv((void *) data->free(), left)) > 0)
+			//解析协议
+			doProtocolAnalysis(&_recvBuffer);
+
+			//接收的数据小于buffer大小, 内核会再次通知你
+			if (iRet < (int) left)
 			{
-				data->addWriteIdx(iRet);
-
-				_recvBuffer.addLength(iRet);
-
-				//解析协议
-				doProtocolAnalysis(&_recvBuffer);
-
-				//接收的数据小于buffer大小, 内核会再次通知你
-				if (iRet < (int) left)
-				{
-					break;
-				}
+				break;
 			}
-
-			break;
 		}
-		while (iRet > 0);
 
-		if (iRet == 0)
-		{
-			close();
-			throw TC_SerialPortException("peer close connection");
-		}
+		break;
 	}
-	catch (exception & ex)
-	{
-		auto callback = getRequestCallbackPtr();
+	while (iRet > 0);
 
-		if (callback)
-		{
-			callback->onFailed(ex.what());
-			callback->onClose();
-		}
+	if (iRet == 0)
+	{
+		throw TC_SerialPortException("peer close connection");
 	}
 
 	return true;
@@ -746,20 +804,8 @@ bool TC_SerialPort::handleInputImp(const shared_ptr<TC_Epoller::EpollInfo> & epo
 #else
 bool TC_SerialPort::handleInputImp()
 {
-	try
-	{
-		this->recv();
-	}
-	catch (exception & ex)
-	{
-		auto callback = getRequestCallbackPtr();
+	this->recv();
 
-		if (callback)
-		{
-			callback->onFailed(ex.what());
-			callback->onClose();
-		}
-	}
 	return true;
 }
 #endif
@@ -769,9 +815,9 @@ void TC_SerialPort::onRequestCallback()
 	for (;;)
 	{
 		decltype(_messages)::iterator it;
+		std::lock_guard<std::mutex> lock(_messageMutex);
 
 		{
-			std::lock_guard<std::mutex> lock(_mutex);
 			if (_messages.empty())
 			{
 				return;
@@ -788,8 +834,6 @@ void TC_SerialPort::onRequestCallback()
 
 		if (iRet != eRetNotSend)
 		{
-			std::lock_guard<std::mutex> lock(_mutex);
-
 			_messages.erase(it);
 		}
 
@@ -809,19 +853,7 @@ bool TC_SerialPort::handleOutputImp(const shared_ptr<TC_Epoller::EpollInfo> & da
 bool TC_SerialPort::handleOutputImp()
 #endif
 {
-	try
-	{
-		doRequest();
-	}
-	catch (exception & ex)
-	{
-		auto callback = getRequestCallbackPtr();
-		if (callback)
-		{
-			callback->onFailed(ex.what());
-			callback->onClose();
-		}
-	}
+	doRequest();
 	return true;
 }
 
@@ -833,37 +865,23 @@ void TC_SerialPort::sendSucc(uint32_t len)
 
 void TC_SerialPort::recvSucc(uint32_t len)
 {
-	try
+	assert(!_buffRecv.empty());
+
+	auto it = _buffRecv.begin();
+
+	if((*it)->length() > 0)
 	{
-		assert(!_buffRecv.empty());
-
-		auto it = _buffRecv.begin();
-
-		if((*it)->length() > 0)
-		{
-			assert((*it)->length() == len);
-		}
-		else
-		{
-			(*it)->addWriteIdx(len);
-		}
-
-		_recvBuffer.addBuffer(*it);
-		_buffRecv.erase(it);
-
-		doProtocolAnalysis(&_recvBuffer);
+		assert((*it)->length() == len);
 	}
-	catch (exception & ex)
+	else
 	{
-		close();
-		auto callback = getRequestCallbackPtr();
-		if (callback)
-		{
-			callback->onFailed(ex.what());
-			// callback->onClose();
-		}
-	}	
+		(*it)->addWriteIdx(len);
+	}
 
+	_recvBuffer.addBuffer(*it);
+	_buffRecv.erase(it);
+
+	doProtocolAnalysis(&_recvBuffer);
 }
 
 #endif
@@ -944,11 +962,7 @@ void TC_SerialPort::doRequest()
 int TC_SerialPort::send(const void *buf, uint32_t len)
 {
 #if TARGET_PLATFORM_WINDOWS
-	if(!isValid())
-	{
-		return 0;
-	}
-
+	
 	if(len == 0)
 	{
 		return 0;
@@ -974,7 +988,6 @@ int TC_SerialPort::send(const void *buf, uint32_t len)
 		int nerr = TC_Exception::getSystemCode();
 		string err = "send error, errno:" + TC_Common::tostr(nerr) + "," + TC_Exception::parseError(nerr);
 		HANDLE fd = _serialFd;
-		close();
 		throw TC_SerialPortException("TC_SerialPort::send, fd:" + TC_Common::tostr(fd) + ", error:" + err);
 	}
 
@@ -993,7 +1006,6 @@ int TC_SerialPort::send(const void *buf, uint32_t len)
 		int nerr = TC_Exception::getSystemCode();
 		string err = "send error, errno:" + TC_Common::tostr(nerr) + "," + TC_Exception::parseError(nerr);
 		int fd = _serialFd;
-		close();
 		throw TC_SerialPortException("TC_SerialPort::send, fd:" + TC_Common::tostr(fd) + ", error:" + err);
 	}
 	return iRet;
@@ -1005,10 +1017,7 @@ int TC_SerialPort::send(const void *buf, uint32_t len)
 
 int TC_SerialPort::recv()
 {
-	if(!isValid())
-	{
-		return 0;
-	}
+
 	DWORD  dwErrorFlags;
 	COMSTAT ComStat;
 	DWORD dwBytesRead;
@@ -1034,7 +1043,6 @@ int TC_SerialPort::recv()
 		int nerr = TC_Exception::getSystemCode();
 		string err = "recv error, errno:" + TC_Common::tostr(nerr) + "," + TC_Exception::parseError(nerr);
 		HANDLE fd = _serialFd;
-		close();
 		throw TC_SerialPortException("TC_SerialPort::recv, fd:" + TC_Common::tostr(fd) + ", error:" + err);
 	}
 
@@ -1056,7 +1064,6 @@ int TC_SerialPort::recv(void *buf, uint32_t len)
 		int nerr = TC_Exception::getSystemCode();
 		string err = "recv error, errno:" + TC_Common::tostr(nerr) + "," + TC_Exception::parseError(nerr);
 		int fd = _serialFd;
-		close();
 		throw TC_SerialPortException("TC_SerialPort::recv, fd:" + TC_Common::tostr(fd) + ", error:" + err);
 	}
 	return iRet;
