@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tencent is pleased to support the open source community by making Tars available.
  *
  * Copyright (C) 2016THL A29 Limited, a Tencent company. All rights reserved.
@@ -17,6 +17,7 @@
 #include "util/tc_port.h"
 #include <set>
 #include <string.h>
+#include <algorithm>
 
 #if TARGET_PLATFORM_IOS
 #include <sys/proc_info.h>
@@ -240,7 +241,7 @@ int TC_File::removeFile(const string &sFullFileName, bool bRecursive)
         if(bRecursive)
         {
             vector<string> files;
-            listDirectory(path, files, false);
+            listDirectory(path, files, false, false);
             for(size_t i = 0; i < files.size(); i++)
             {
                 removeFile(files[i], bRecursive);
@@ -250,6 +251,7 @@ int TC_File::removeFile(const string &sFullFileName, bool bRecursive)
             {
                 if(TC_Port::rmdir(path.c_str()) == -1)
                 {
+                    // cout << "rmdir1 error, path:" << path << ", errno:" << errno << endl;
                     return -1;
                 }
                 return 0;
@@ -259,6 +261,7 @@ int TC_File::removeFile(const string &sFullFileName, bool bRecursive)
         {
             if(TC_Port::rmdir(path.c_str()) == -1)
             {
+                // cout << "rmdir2 error, path:" << path << ", errno:" << errno << endl;
                 return -1;
             }
         }
@@ -565,7 +568,7 @@ string TC_File::extractUrlFilePath(const string &sUrl)
 }
 
 #if TARGET_PLATFORM_LINUX || TARGET_PLATFORM_IOS
-size_t TC_File::scanDir(const string &sFilePath, vector<string> &vtMatchFiles, FILE_SELECT f, int iMaxSize )
+size_t TC_File::scanDir(const string &sFilePath, vector<string> &vtMatchFiles, FILE_SELECT f, int iMaxSize, bool ignoreHide)
 {
 	vtMatchFiles.clear();
 
@@ -587,6 +590,18 @@ size_t TC_File::scanDir(const string &sFilePath, vector<string> &vtMatchFiles, F
 			}
 			else
 			{
+                if((strlen(namelist[n]->d_name) == 1 && strncmp(namelist[n]->d_name,".", 1) == 0) || (strlen(namelist[n]->d_name) == 2 && strncmp(namelist[n]->d_name,"..", 2) == 0))
+                {
+                    free(namelist[n]);
+                    continue;
+                }
+
+				if (ignoreHide && namelist[n]->d_name[0] == '.')
+				{
+					free(namelist[n]);
+					continue;
+				}
+
 				vtMatchFiles.push_back(namelist[n]->d_name);
 				free(namelist[n]);
 			}
@@ -596,22 +611,77 @@ size_t TC_File::scanDir(const string &sFilePath, vector<string> &vtMatchFiles, F
 
 	return vtMatchFiles.size();
 }
-#endif 
+#elif TARGET_PLATFORM_WINDOWS
+size_t TC_File::scanDir(const string &sFilePath, vector<string> &vtMatchFiles, FILE_SELECT f, int iMaxSize, bool ignoreHide)
+{
+	vtMatchFiles.clear();
+
+	vector<string> tempFiles;
+	intptr_t hFile;
+	_finddata_t fileinfo;
+	string searchPath = sFilePath;
+	if (searchPath.length() > 0 && searchPath[searchPath.length() - 1] != FILE_SEP[0])
+	{
+		searchPath += FILE_SEP;
+	}
+	searchPath += "*.*";
+
+	if ((hFile = _findfirst(searchPath.c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+            if((strlen(fileinfo.name) == 1 && strncmp(fileinfo.name,".", 1) == 0) || (strlen(fileinfo.name) == 2 && strncmp(fileinfo.name,"..", 2) == 0))
+				continue;
+
+			if (ignoreHide && fileinfo.name[0] == '.')
+				continue;
+
+			dirent entry;
+			size_t copyLen = strlen(fileinfo.name);
+			if (copyLen >= MAX_PATH)
+			{
+				copyLen = MAX_PATH - 1;
+			}
+			memcpy(entry.d_name, fileinfo.name, copyLen);
+			entry.d_name[copyLen] = '\0';
+
+			if (fileinfo.attrib & _A_SUBDIR)
+			{
+				entry.d_type = 4;
+			}
+			else
+			{
+				entry.d_type = 8;
+			}
+
+			if (f == NULL || f(&entry))
+			{
+				tempFiles.push_back(fileinfo.name);
+			}
+
+            if(iMaxSize > 0 && tempFiles.size() >= (size_t)iMaxSize )
+            {
+                break;
+            }
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+
+	std::sort(tempFiles.begin(), tempFiles.end());
+
+	vtMatchFiles.insert(vtMatchFiles.end(), tempFiles.begin(), tempFiles.end());
+
+	return vtMatchFiles.size();
+}
+#endif
 
 void TC_File::listDirectory(const string &path, vector<string> &files, bool bRecursive, bool ignoreHide)
 {
-#if TARGET_PLATFORM_LINUX || TARGET_PLATFORM_IOS
     vector<string> tf;
-    scanDir(path, tf, 0, 0);
+    scanDir(path, tf, 0, 0, ignoreHide);
 
     for(size_t i = 0; i < tf.size(); i++)
     {
-        if(tf[i] == "." || tf[i] == "..")
-            continue;
-
-		if (ignoreHide && tf[i].at(0) == '.')
-			continue;
-
 		string s = path + FILE_SEP + tf[i];
 
         if(isFileExist(s, S_IFDIR))
@@ -627,35 +697,6 @@ void TC_File::listDirectory(const string &path, vector<string> &files, bool bRec
             files.push_back(simplifyDirectory(s));
         }
     }
-#elif TARGET_PLATFORM_WINDOWS
-	intptr_t hFile;
-	_finddata_t fileinfo;
-	if ((hFile = _findfirst(string(path + "\\*.*").c_str(), &fileinfo)) != -1)
-	{
-		do
-		{
-			string sName = fileinfo.name;
-			if (sName == "." || sName == "..")
-				continue;
-
-			string s = path + FILE_SEP + sName;
-
-			if (fileinfo.attrib & _A_SUBDIR)
-			{
-				files.push_back(simplifyDirectory(s));
-				if (bRecursive)
-				{
-					listDirectory(s, files, bRecursive, ignoreHide);
-				}				
-			}
-			else
-			{
-				files.push_back(simplifyDirectory(s));
-			}
-		} while (_findnext(hFile, &fileinfo) == 0);
-		_findclose(hFile);
-	}
-#endif
 }
 
 void TC_File::copyFile(const string &sExistFile, const string &sNewFile,bool bRemove)
@@ -669,7 +710,7 @@ void TC_File::copyFile(const string &sExistFile, const string &sNewFile,bool bRe
     {
         TC_File::makeDir(sNewFile);
         vector<string> tf;
-        TC_File::listDirectory(sExistFile,tf, false);
+        TC_File::listDirectory(sExistFile,tf, false, false);
         for(size_t i = 0; i <tf.size(); i++)
         {
             string fileName = TC_File::extractFileName(tf[i]);

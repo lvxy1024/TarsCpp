@@ -50,7 +50,7 @@ include(ExternalProject)
 # if(WIN32)
 # 
 #     ExternalProject_Add(ADD_CURL
-#         URL http://cdn.tarsyun.com/src/curl-7.69.1.tar.gz
+#         URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:curl/-/tag/7.75.0/-/file/curl-7.75.0.tar.gz
 #         DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #         PREFIX ${CMAKE_BINARY_DIR}
 #         INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -59,7 +59,7 @@ include(ExternalProject)
 #         BUILD_IN_SOURCE 1
 #         BUILD_COMMAND ${CMAKE_COMMAND} --build . --config release -- /maxcpucount:4
 #         INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config release --target install
-#         URL_MD5 b9bb5e11d579425154a9f97ed44be9b8
+#         URL_MD5 2071994cfc5079d03439915f2751c8bc
 #     )
 # 
 #     add_dependencies(thirdparty ADD_CURL)
@@ -75,7 +75,7 @@ if (WIN32)
     endif()
 
 #     ExternalProject_Add(ADD_${LIB_GTEST}
-#             URL http://cdn.tarsyun.com/src/release-1.10.0.zip
+#             URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:gtest/-/tag/1.10.0/-/file/gtest-1.10.0.zip
 #             DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #             PREFIX ${CMAKE_BINARY_DIR}
 #             INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -90,7 +90,7 @@ else()
     set(LIB_GTEST "gtest")
 
 #     ExternalProject_Add(ADD_${LIB_GTEST}
-#             URL http://cdn.tarsyun.com/src/release-1.10.0.fixed.tar.gz
+#             URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:gtest.fixed/-/tag/1.10.0/-/file/gtest.fixed-1.10.0.tar.gz
 #             DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #             PREFIX ${CMAKE_BINARY_DIR}
 #             INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -119,7 +119,7 @@ if (TARS_PROTOBUF)
         set(LIB_PROTOBUF "libprotobuf")
 
 #         ExternalProject_Add(ADD_${LIB_PROTOBUF}
-#                 URL http://cdn.tarsyun.com/src/protobuf-cpp-3.11.3.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:protobuf-cpp/-/tag/3.11.3/-/file/protobuf-cpp-3.11.3.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -135,7 +135,7 @@ if (TARS_PROTOBUF)
         set(LIB_PROTOBUF "protobuf")
 
 #         ExternalProject_Add(ADD_${LIB_PROTOBUF}
-#                 URL http://cdn.tarsyun.com/src/protobuf-cpp-3.11.3.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:protobuf-cpp/-/tag/3.11.3/-/file/protobuf-cpp-3.11.3.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -167,7 +167,7 @@ if (TARS_SSL)
         set(LIB_CRYPTO "libcrypto")
 
 #         ExternalProject_Add(ADD_${LIB_SSL}
-#                 URL http://cdn.tarsyun.com/src/openssl-1.1.1l.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:openssl-1.1.1l/-/tag/1.1.1/-/file/openssl-1.1.1l-1.1.1.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -183,7 +183,7 @@ if (TARS_SSL)
         set(LIB_CRYPTO "crypto")
 
 #         ExternalProject_Add(ADD_${LIB_SSL}
-#                 URL http://cdn.tarsyun.com/src/openssl-1.1.1l.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:openssl-1.1.1l/-/tag/1.1.1/-/file/openssl-1.1.1l-1.1.1.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -212,7 +212,7 @@ if (TARS_MYSQL)
         set(LIB_MYSQL "libmysql")
 
 #         ExternalProject_Add(ADD_${LIB_MYSQL}
-#                 URL http://cdn.tarsyun.com/src/mysql-connector-c-6.1.11-src.fixed.zip
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:mysql-connector-c-src.fixed/-/tag/6.1.11/-/file/mysql-connector-c-src.fixed-6.1.11.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -221,14 +221,14 @@ if (TARS_MYSQL)
 #                 BUILD_IN_SOURCE 1
 #                 BUILD_COMMAND ${CMAKE_COMMAND} --build . --config release -- /maxcpucount:4
 #                 INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config release --target install
-#                 URL_MD5 bad636fe9bcc9bb62e3f5b784495a9b5
+#                 URL_MD5 3578d736b9d493eae076a67e3ed473eb
 #                 )
 
     else ()
         set(LIB_MYSQL "mysqlclient")
 
 #         ExternalProject_Add(ADD_${LIB_MYSQL}
-#                 URL http://cdn.tarsyun.com/src/mysql-connector-c-6.1.11-src.fixed.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:mysql-connector-c-src.fixed/-/tag/6.1.11/-/file/mysql-connector-c-src.fixed-6.1.11.zip
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -236,7 +236,9 @@ if (TARS_MYSQL)
 #                 SOURCE_DIR ${CMAKE_BINARY_DIR}/src/mysql-lib
 #                 BUILD_IN_SOURCE 1
 #                 BUILD_COMMAND make mysqlclient  -j4
-#                 URL_MD5 3578d736b9d493eae076a67e3ed473eb
+#                 # URL_MD5 3578d736b9d493eae076a67e3ed473eb
+#                 # URL_MD5 b97bd3b3f826c70ed3de4983840fff56
+#                 URL_MD5 bad636fe9bcc9bb62e3f5b784495a9b5
 #                 )
 
     endif ()
@@ -258,7 +260,7 @@ if (TARS_GZIP)
         set(LIB_GZIP "zlib")
 
 #         ExternalProject_Add(ADD_${LIB_GZIP}
-#                 URL http://cdn.tarsyun.com/src/zlib-1.2.11.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:zlib/-/tag/1.3.1/-/file/zlib-1.3.1.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -274,7 +276,7 @@ if (TARS_GZIP)
         set(LIB_GZIP "z")
 
 #         ExternalProject_Add(ADD_${LIB_GZIP}
-#                 URL http://cdn.tarsyun.com/src/zlib-1.2.11.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:zlib/-/tag/1.3.1/-/file/zlib-1.3.1.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -282,7 +284,7 @@ if (TARS_GZIP)
 #                 SOURCE_DIR ${CMAKE_BINARY_DIR}/src/zlib-lib
 #                 BUILD_IN_SOURCE 1
 #                 BUILD_COMMAND make -j4
-#                 URL_MD5 1c9f62f0778697a09d36121ead88e08e
+#                 URL_MD5 9855b6d802d7fe5b7bd5b196a2271655
 #                 )
 
     endif ()
@@ -310,7 +312,7 @@ if (TARS_HTTP2)
 
 #     if (WIN32)
 #         ExternalProject_Add(ADD_${LIB_HTTP2}
-#                 URL http://cdn.tarsyun.com/src/nghttp2-1.40.0.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:nghttp2/-/tag/1.40.0/-/file/nghttp2-1.40.0.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
@@ -324,7 +326,7 @@ if (TARS_HTTP2)
 # 
 #     else ()
 #         ExternalProject_Add(ADD_${LIB_HTTP2}
-#                 URL http://cdn.tarsyun.com/src/nghttp2-1.40.0.tar.gz
+#                 URL https://cnb.cool/tarsyun/tars/src/-/packages/maven/tars:nghttp2/-/tag/1.40.0/-/file/nghttp2-1.40.0.tar.gz
 #                 DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/download
 #                 PREFIX ${CMAKE_BINARY_DIR}
 #                 INSTALL_DIR ${CMAKE_SOURCE_DIR}
